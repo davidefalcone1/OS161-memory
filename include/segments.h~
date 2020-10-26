@@ -1,0 +1,10 @@
+#ifndef SEGMENTS_H
+#define SEGMENTS_H
+#include <elf.h>
+#include <addrspace.h>
+#include <vnode.h>
+#include "opt-dumbvm.h"
+int read_executable_header(struct vnode *v, Elf_Ehdr *eh);
+int init_segments(struct vnode *v, Elf_Ehdr eh, struct addrspace *as);
+int load_page(struct vnode *v, int page, vaddr_t vaddr);
+#endif

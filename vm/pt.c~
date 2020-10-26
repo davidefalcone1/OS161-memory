@@ -1,0 +1,38 @@
+#include <types.h>
+#include <kern/errno.h>
+#include <lib.h>
+#include "pt.h"
+#define STACKPAGES	18
+
+struct pt_entry *create_page_table(struct addrspace *as){
+	struct pt_entry *pt;
+	pt = (struct pt_entry *) kmalloc((as->as_npages1 + as->as_npages2 + STACKPAGES) * sizeof(struct pt_entry));
+	if(pt == NULL)
+		return NULL;
+	bzero(pt, (as->as_npages1 + as->as_npages2 + STACKPAGES) * sizeof(struct pt_entry));
+	return pt;
+}
+
+int page_is_resident(struct addrspace *as, int page){
+	return as->as_pagetable[page].resident;
+}
+void update_pagetable(struct addrspace *as, int page, paddr_t paddr, int is_resident){
+	struct pt_entry entry = as->as_pagetable[page];
+	entry.paddr = paddr;
+	entry.resident = is_resident;
+	(void)entry;
+}
+paddr_t get_paddr(struct addrspace *as, int page){
+	return as->as_pagetable[page].paddr;
+}
+
+
+
+
+
+
+
+
+
+
+

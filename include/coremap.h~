@@ -1,0 +1,10 @@
+#ifndef COREMAP_H
+#define COREMAP_H
+
+int table_init(int nRamFrames);
+int freeppages(paddr_t addr);
+paddr_t getfreeppages(unsigned long npages);
+void isTableActive (void);
+void update_table(paddr_t addr, int npages);
+
+#endif

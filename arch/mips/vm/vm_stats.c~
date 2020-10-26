@@ -1,0 +1,20 @@
+#include "vm_stats.h"
+#include <stdio.h>
+
+int tlb_faults = 0;
+int tlb_faults_free = 0;
+int tlb_faults_replace = 0;
+int tlb_invalidations = 0;
+int tlb_reloads = 0;
+
+void vm_shutdown(void){
+	kprintf("Number of TLB faults: %d\n", tlb_faults);
+	kprintf("Number of TLB faults with Free: %d\n", tlb_faults_free);
+	kprintf("Number of TLB faults with Replace: %d\n", tlb_faults_replace);
+	kprintf("Number of TLB invalidations: %d\n", tlb_invalidations);
+	kprintf("Number of TLB reloads: %d\n", tlb_reloads);
+}
+
+void increment_tlb_faults(void){
+	tlb_faults++;
+}

@@ -1,0 +1,8 @@
+#ifndef PT_H
+#define PT_H
+#include <addrspace.h>
+struct pt_entry *create_page_table(struct addrspace *as);
+int page_is_resident(struct addrspace *as, int page);
+void update_page_table(struct addrspace *as, int page, paddr_t paddr, int is_resident);
+paddr_t get_paddr(struct addrspace *as, int page);
+#endif
