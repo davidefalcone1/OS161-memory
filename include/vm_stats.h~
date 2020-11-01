@@ -1,9 +1,0 @@
-#ifndef VM_STATS_H
-#define VM_STATS_H
-void vm_shutdown(void);
-void increment_tlb_faults(void);
-void increment_tlb_faults_free(void);
-void increment_tlb_faults_replace(void);
-void increment_tlb_invalidations(void);
-void increment_tlb_reloads(void);
-#endif

@@ -1,7 +1,0 @@
-#ifndef VM_TLB_H
-#define VM_TLB_H
-#include "opt-tlb.h"
-#if OPT_TLB
-int tlb_get_rr_victim(void);
-#endif
-#endif
