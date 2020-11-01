@@ -1,0 +1,82 @@
+#include <types.h>
+#include <kern/unistd.h>
+#include <stdarg.h>
+#include <lib.h>
+#include <spl.h>
+#include <cpu.h>
+#include <thread.h>
+#include <current.h>
+#include <synch.h>
+#include <mainbus.h>
+#include <vfs.h>          // for vfs_sync()
+#include <lamebus/ltrace.h>
+#include "file_syscalls.h"
+#include "opt-file.h"
+#if OPT_FILE
+struct openfile{
+    off_t refCount;
+    unsigned int offset;
+    struct vnode* v;  
+};
+
+struct openfile sysFileTable[10*OPEN_MAX]; 
+#endif
+
+int sys_read(int fd, char *buf, size_t count){
+    if(fd!= STDIN_FILENO)
+	{
+	    return -1;
+	} 
+    int i; 
+    char *b = buf; 
+    
+    for(i= 0; i<(int)count; i++)
+	{
+	    *b = getch();
+	    if(*buf<0)
+		{
+		    return i; 
+		}
+	    b++;
+	}
+       
+
+    return i; 
+}
+
+int sys_write(int fd, const char *buf, size_t count){
+ 
+
+    if(fd!=STDOUT_FILENO)
+	{
+	    return -1; 
+	} 
+  
+    int i; 
+    for (i = 0; i<(int)count; i++)
+	{
+	    putch(*buf);
+	    buf++; 
+	}
+   
+
+    return (int)count;
+
+}
+
+int open(userptr_t path, int openflags, mode_t mode, int* errp){
+#if OPT_FILE
+    struct vnode vn;
+    int res = vfs_open((char*)path, openflags, mode, &vn);
+    if(res<0)
+	{
+	    return -1;
+	}
+    for(int i = 0; i<10*OPEN_MAX; i++){
+	if(systemFileTable[i]==NULL){
+	}
+    }
+    
+#endif
+
+}

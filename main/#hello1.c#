@@ -1,0 +1,7 @@
+#include <types.h>
+#include <lib.h>
+#include "hello1.h"
+
+void hello1(void){
+  kprintf("My own hello!\n"); 
+}
