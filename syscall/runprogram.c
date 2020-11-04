@@ -44,6 +44,84 @@
 #include <vfs.h>
 #include <syscall.h>
 #include <test.h>
+#include <vnode.h>
+#include <elf.h>
+#include <uio.h>
+#include "coremap.h"
+
+#if OPT_PAGING
+static int read_elf_header(struct vnode *v, vaddr_t *entrypoint){
+	struct iovec iov;
+	struct uio ku;
+	Elf_Ehdr eh; /* Executable header */
+	Elf_Phdr ph; /* Program header */
+	struct addrspace *as = proc_getas();
+	int result, i;
+	
+	uio_kinit(&iov, &ku, &eh, sizeof(eh), 0, UIO_READ);
+	result = VOP_READ(v, &ku);
+
+	for (i=0; i<eh.e_phnum; i++) {
+		off_t offset = eh.e_phoff + i*eh.e_phentsize;
+		uio_kinit(&iov, &ku, &ph, sizeof(ph), offset, UIO_READ);
+
+		result = VOP_READ(v, &ku);
+		if (result) {
+			return result;
+		}
+
+		if (ku.uio_resid != 0) {
+			/* short read; problem with executable? */
+			kprintf("ELF: short read on phdr - file truncated?\n");
+			return ENOEXEC;
+		}
+
+		switch (ph.p_type) {
+		    case PT_NULL: /* skip */ continue;
+		    case PT_PHDR: /* skip */ continue;
+		    case PT_MIPS_REGINFO: /* skip */ continue;
+		    case PT_LOAD: break;
+		    default:
+			kprintf("vm: unknown segment type %d\n",
+				ph.p_type);
+			return ENOEXEC;
+		}
+
+		result = as_define_region(as,
+					  ph.p_vaddr, ph.p_memsz,
+					  ph.p_flags & PF_R,
+					  ph.p_flags & PF_W,
+					  ph.p_flags & PF_X);
+		if (result) {
+			return result;
+		}
+		if(as->offset_text_elf == -1)
+			as->offset_text_elf = ph.p_offset;
+		else if(as->offset_data_elf == -1)
+			as->offset_data_elf = ph.p_offset;
+	}
+
+	/* Set entrypoint */
+	*entrypoint = eh.e_entry;
+	return result;
+}
+static int alloc_process_frames(){
+	int i;
+	paddr_t paddr;
+	struct addrspace *as = proc_getas();
+	if(as == NULL)
+		return 1;
+	for(i = 0; i < N_FRAME; i++){
+		paddr = getppages(1);
+		if(!paddr)
+			return 2;
+		as->page_table[i].paddr = paddr;
+		as->page_table[i].vaddr = 0;
+		as->page_table[i].resident = 0;
+	}
+	return 0;
+}
+#endif
 
 /*
  * Load program "progname" and start running it in usermode.
@@ -79,16 +157,19 @@ runprogram(char *progname)
 	proc_setas(as);
 	as_activate();
 
-	/* Load the executable. */
+	#if OPT_PAGING
+	/* Set elf vnode in as struct */
+	as->v = v;
+	/* Read executable header and segment headers */
+	read_elf_header(v, &entrypoint);
+	
+	/* Alloc N_FRAME frames to process */
+	alloc_process_frames();
+	#else
 	result = load_elf(v, &entrypoint);
-	if (result) {
-		/* p_addrspace will go away when curproc is destroyed */
-		vfs_close(v);
-		return result;
-	}
-
 	/* Done with the file now. */
 	vfs_close(v);
+	#endif
 
 	/* Define the user stack in the address space */
 	result = as_define_stack(as, &stackptr);

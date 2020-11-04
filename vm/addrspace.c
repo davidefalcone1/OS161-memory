@@ -30,9 +30,14 @@
 #include <types.h>
 #include <kern/errno.h>
 #include <lib.h>
+#include <spl.h>
+#include <cpu.h>
+#include <spinlock.h>
+#include <proc.h>
+#include <current.h>
+#include <mips/tlb.h>
 #include <addrspace.h>
 #include <vm.h>
-#include <proc.h>
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -50,9 +55,12 @@ as_create(void)
 		return NULL;
 	}
 
-	/*
-	 * Initialize as needed.
-	 */
+	as->as_vbase1 = 0;
+	as->as_npages1 = 0;
+	as->as_vbase2 = 0;
+	as->as_npages2 = 0;
+	as->offset_data_elf = -1;
+	as->offset_text_elf = -1;
 
 	return as;
 }
@@ -90,20 +98,25 @@ as_destroy(struct addrspace *as)
 void
 as_activate(void)
 {
+	int i, spl;
 	struct addrspace *as;
+	struct proc *p = curproc;
 
 	as = proc_getas();
 	if (as == NULL) {
-		/*
-		 * Kernel thread without an address space; leave the
-		 * prior address space in place.
-		 */
 		return;
 	}
+	//TODO: Risolvere context switch e tlb invalidation
+	if(strcmp(p->p_name, "testbin/palin")){
+		/* Disable interrupts on this CPU while frobbing the TLB. */
+		spl = splhigh();
 
-	/*
-	 * Write this.
-	 */
+		for (i=0; i<NUM_TLB; i++) {
+			tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+		}
+
+		splx(spl);
+	}
 }
 
 void
@@ -127,19 +140,41 @@ as_deactivate(void)
  * want to implement them.
  */
 int
-as_define_region(struct addrspace *as, vaddr_t vaddr, size_t memsize,
+as_define_region(struct addrspace *as, vaddr_t vaddr, size_t sz,
 		 int readable, int writeable, int executable)
 {
-	/*
-	 * Write this.
-	 */
+	size_t npages;
 
-	(void)as;
-	(void)vaddr;
-	(void)memsize;
+	/* Align the region. First, the base... */
+	sz += vaddr & ~(vaddr_t)PAGE_FRAME;
+	vaddr &= PAGE_FRAME;
+
+	/* ...and now the length. */
+	sz = (sz + PAGE_SIZE - 1) & PAGE_FRAME;
+
+	npages = sz / PAGE_SIZE;
+
+	/* TODO: read-only text segment? */
 	(void)readable;
 	(void)writeable;
 	(void)executable;
+
+	if (as->as_vbase1 == 0) {
+		as->as_vbase1 = vaddr;
+		as->as_npages1 = npages;
+		return 0;
+	}
+
+	if (as->as_vbase2 == 0) {
+		as->as_vbase2 = vaddr;
+		as->as_npages2 = npages;
+		return 0;
+	}
+
+	/*
+	 * Support for more than two regions is not available.
+	 */
+	kprintf("Warning: too many regions\n");
 	return ENOSYS;
 }
 
@@ -168,15 +203,8 @@ as_complete_load(struct addrspace *as)
 int
 as_define_stack(struct addrspace *as, vaddr_t *stackptr)
 {
-	/*
-	 * Write this.
-	 */
-
 	(void)as;
-
-	/* Initial user-level stack pointer */
 	*stackptr = USERSTACK;
-
 	return 0;
 }
 

@@ -36,7 +36,9 @@
 
 
 #include <vm.h>
+#include "pt.h"
 #include "opt-dumbvm.h"
+#include "opt-paging.h"
 
 struct vnode;
 
@@ -48,8 +50,20 @@ struct vnode;
  * You write this.
  */
 
+#define N_FRAME 5
+
 struct addrspace {
-#if OPT_DUMBVM
+#if OPT_PAGING
+        /* Put stuff here for your VM system */
+        vaddr_t as_vbase1;
+        size_t as_npages1;
+        vaddr_t as_vbase2;
+        size_t as_npages2;
+        off_t offset_text_elf;
+        off_t offset_data_elf;
+        struct pt_entry page_table[N_FRAME];
+        struct vnode *v; /* vnode of elf file */
+#else
         vaddr_t as_vbase1;
         paddr_t as_pbase1;
         size_t as_npages1;
@@ -57,8 +71,6 @@ struct addrspace {
         paddr_t as_pbase2;
         size_t as_npages2;
         paddr_t as_stackpbase;
-#else
-        /* Put stuff here for your VM system */
 #endif
 };
 

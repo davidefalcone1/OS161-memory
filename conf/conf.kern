@@ -388,6 +388,7 @@ defoption lock_synch
 defoption lock_sem
 defoption wait_pid
 defoption file
+defoption paging
 file      main/main.c
 file      main/menu.c
 
@@ -447,3 +448,8 @@ file		test/semunit.c
 file		test/kmalloctest.c
 file		test/fstest.c
 optfile net	test/nettest.c
+
+optfile paging vm/vm.c
+optfile paging vm/segments.c
+optfile paging vm/pt.c
+optfile paging vm/coremap.c

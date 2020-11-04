@@ -56,6 +56,7 @@
  */
 
 #include <kern/iovec.h>
+#include "opt-paging.h"
 
 /* Direction. */
 enum uio_rw {
@@ -137,6 +138,11 @@ int uiomovezeros(size_t len, struct uio *uio);
  */
 void uio_kinit(struct iovec *, struct uio *,
 	       void *kbuf, size_t len, off_t pos, enum uio_rw rw);
+
+#if OPT_PAGING
+void uio_init(struct iovec *, struct uio *,
+	       void *ubuf, size_t len, off_t pos, enum uio_rw rw, int is_code);
+#endif
 
 
 #endif /* _UIO_H_ */
