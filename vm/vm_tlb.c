@@ -10,14 +10,33 @@
 #include <addrspace.h>
 #include <vm.h>
 #include "segments.h"
+#include "vm_tlb.h"
 
 #define STACKPAGES    18
+
+// static int tlb_get_rr_victim(void){
+// 	int victim;
+// 	static unsigned int next_victim = 0;
+// 	victim = next_victim;
+// 	next_victim = (next_victim + 1) % NUM_TLB;
+// 	return victim;
+// }
+
+int tlb_resident(vaddr_t vaddr){
+	uint32_t ehi, elo;
+	ehi = vaddr;
+	elo = 0;
+	return tlb_probe(ehi, elo);
+}
+void tlb_remove(int index){
+	tlb_write(TLBHI_INVALID(index), TLBLO_INVALID(), index);
+}
 
 int vm_fault(int faulttype, vaddr_t faultaddress)
 {
 	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop;
 	paddr_t paddr;
-	int i, is_code, need_load, spl, result;
+	int i, is_code, need_load, spl, result, inserted = 0, cane=0;
 	uint32_t ehi, elo;
 	struct addrspace *as;
 
@@ -108,18 +127,30 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
 		tlb_write(ehi, elo, i);
 		splx(spl);
+		inserted = 1;
 		break;
 	}
 
-	//TODO: CONTROLLA SE HAI INSERITO E IN CASO FAI REPLACEMENT 
+	if(!inserted){
+		/* TLB replacement */
+
+	}
 
     if(need_load){
         /* Page fault */
-        //TODO: CONTROLLO SE PAGINA APPARTIENE ALL ELF
-        result = load_page_from_elf(faultaddress, is_code);
+		// First, clear frame
+		bzero((void *)faultaddress, PAGE_SIZE);
+        if(faultaddress <= stacktop && faultaddress >= stackbase){
+			/* Stack */
+			cane++;
+			(void)cane;
+		}
+		else {
+			/* ELF file */
+			result = load_page_from_elf(faultaddress, is_code);
 		if(result)
 			return result;
+		}
     }
-
 	return 0;
 }

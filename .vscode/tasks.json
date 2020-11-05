@@ -10,21 +10,33 @@
             "problemMatcher": []
         },
         {
+            "label": "Compile and run",
+            "type": "shell",
+            "command": "cd conf/;./config PAGING;cd ..;cd compile/PAGING;bmake depend;bmake;bmake install;cd /home/pds/pds-os161/root;sys161 -w kernel",
+            "problemMatcher": []
+        },
+        {
+            "label": "Compile",
+            "type": "shell",
+            "command": "cd conf/;./config PAGING;cd ..;cd compile/PAGING;bmake depend;bmake;bmake install",
+            "problemMatcher": []
+        },
+        {
             "label": "Run Config",
             "type": "shell",
-            "command": "cd conf/;./config ${input:VersionName}",
+            "command": "cd conf/;./config PAGING",
             "problemMatcher": []
         },
         {
             "label": "Make Depend",
             "type": "shell",
-            "command": "cd compile/${input:VersionName};bmake depend",
+            "command": "cd compile/PAGING;bmake depend",
             "problemMatcher": []
         },
         {
             "label": "Build and Install",
             "type": "shell",
-            "command": "cd compile/${input:VersionName};bmake;bmake install",
+            "command": "cd compile/PAGING;bmake;bmake install",
             "problemMatcher": [],
             "group": {
                 "kind": "build",

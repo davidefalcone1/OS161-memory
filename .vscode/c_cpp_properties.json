@@ -5,8 +5,8 @@
             "includePath": [
                 "/home/pds/os161/os161-base-2.0.2/kern/include/",
                 "/home/pds/os161/os161-base-2.0.2/kern/lib/",
-                "/home/pds/os161/os161-base-2.0.2/kern/compile/MY_KERN/",
-                "/home/pds/os161/os161-base-2.0.2/kern/compile/MY_KERN/includelinks/"
+                "/home/pds/os161/os161-base-2.0.2/kern/compile/PAGING/",
+                "/home/pds/os161/os161-base-2.0.2/kern/compile/PAGING/includelinks/"
             ],
             "defines": [],
             "compilerPath": "/home/pds/os161/tools/bin/mips-harvard-os161-gcc",

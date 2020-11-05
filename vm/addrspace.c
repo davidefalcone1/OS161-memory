@@ -100,14 +100,14 @@ as_activate(void)
 {
 	int i, spl;
 	struct addrspace *as;
-	struct proc *p = curproc;
+	static struct addrspace *prev_as = NULL;
 
 	as = proc_getas();
 	if (as == NULL) {
 		return;
 	}
-	//TODO: Risolvere context switch e tlb invalidation
-	if(strcmp(p->p_name, "testbin/palin")){
+
+	if(prev_as != as){
 		/* Disable interrupts on this CPU while frobbing the TLB. */
 		spl = splhigh();
 
@@ -117,6 +117,8 @@ as_activate(void)
 
 		splx(spl);
 	}
+
+	prev_as = as;
 }
 
 void
