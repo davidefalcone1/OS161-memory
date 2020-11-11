@@ -10,17 +10,24 @@
 #include <addrspace.h>
 #include <vm.h>
 #include "segments.h"
+#include "swapfile.h"
 #include "vm_tlb.h"
 
 #define STACKPAGES    18
 
-// static int tlb_get_rr_victim(void){
-// 	int victim;
-// 	static unsigned int next_victim = 0;
-// 	victim = next_victim;
-// 	next_victim = (next_victim + 1) % NUM_TLB;
-// 	return victim;
-// }
+typedef enum{
+	CODE,
+	DATA,
+	STACK
+}seg_type;
+
+static int tlb_get_rr_victim(void){
+	int victim;
+	static unsigned int next_victim = 0;
+	victim = next_victim;
+	next_victim = (next_victim + 1) % NUM_TLB;
+	return victim;
+}
 
 int tlb_resident(vaddr_t vaddr){
 	uint32_t ehi, elo;
@@ -36,9 +43,10 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 {
 	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop;
 	paddr_t paddr;
-	int i, is_code, need_load, spl, result, inserted = 0, cane=0;
+	int i, need_load, spl, result, inserted = 0, swap_index;
 	uint32_t ehi, elo;
 	struct addrspace *as;
+	seg_type segment;
 
 	faultaddress &= PAGE_FRAME;
 
@@ -89,15 +97,13 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 	stacktop = USERSTACK;
 
 	if (faultaddress >= vbase1 && faultaddress < vtop1) {
-		/* Code segment */
-		is_code = 1;
+		segment = CODE;
 	}
 	else if (faultaddress >= vbase2 && faultaddress < vtop2) {
-		/* Data segment */
-		is_code = 0;
+		segment = DATA;
 	}
 	else if (faultaddress >= stackbase && faultaddress < stacktop) {
-
+		segment = STACK;
 	}
 	else {
 		return EFAULT;
@@ -124,7 +130,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 		}
 		ehi = faultaddress;
 		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
-		DEBUG(DB_VM, "dumbvm: 0x%x -> 0x%x\n", faultaddress, paddr);
 		tlb_write(ehi, elo, i);
 		splx(spl);
 		inserted = 1;
@@ -133,24 +138,54 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 
 	if(!inserted){
 		/* TLB replacement */
-
+		ehi = faultaddress;
+		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
+		tlb_write(ehi, elo, tlb_get_rr_victim());
+		splx(spl);
 	}
 
     if(need_load){
         /* Page fault */
 		// First, clear frame
 		bzero((void *)faultaddress, PAGE_SIZE);
-        if(faultaddress <= stacktop && faultaddress >= stackbase){
-			/* Stack */
-			cane++;
-			(void)cane;
-		}
-		else {
-			/* ELF file */
-			result = load_page_from_elf(faultaddress, is_code);
-		if(result)
-			return result;
-		}
+		switch (segment)
+		{
+		case CODE:
+			result = load_page_from_elf(faultaddress, 1);
+			if(result)
+				return result;
+			break;
+		case DATA:
+			// Check wheter page is in swap file 
+			swap_index = swapfile_resident(faultaddress);
+			if(swap_index >= 0){
+				// If so, load from swap file
+				result = swap_read(faultaddress, swap_index);
+				if(result)
+					return result;
+			}
+			else{
+				// If not, load from elf
+				result = load_page_from_elf(faultaddress, 0);
+				if(result)
+					return result;
+			}
+			break;
+		case STACK:
+			// Check wheter page is in swap file
+			swap_index = swapfile_resident(faultaddress);
+			if(swap_index >= 0){
+				// If so, load from swap file
+				result = swap_read(faultaddress, swap_index);
+				if(result)
+					return result;
+			}
+			// If not, do nothing (frame already prepared) 
+			break;
+		default:
+			return EFAULT;
+			break;
+		}	
     }
 	return 0;
 }

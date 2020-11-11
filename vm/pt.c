@@ -11,6 +11,7 @@
 #include <vm.h>
 #include "pt.h"
 #include "vm_tlb.h"
+#include "swapfile.h"
 
 paddr_t page_is_resident(vaddr_t vaddr){
     int i;
@@ -39,6 +40,8 @@ paddr_t get_proc_frame(vaddr_t vaddr){
     }
     /* Page replacement */
     i = get_victim();
+    if(as->page_table[i].vaddr >= as->as_vbase2)
+        swap_write(as->page_table[i].vaddr);
     /* Lookup TLB and remove if present */
     tlb_index = tlb_resident(as->page_table[i].vaddr);
     if(tlb_index >= 0)

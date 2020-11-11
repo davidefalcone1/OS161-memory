@@ -10,6 +10,7 @@
 #include <addrspace.h>
 #include <vm.h>
 #include "coremap.h"
+#include "swapfile.h"
 
 /*
  * Wrap ram_stealmem in a spinlock.
@@ -55,6 +56,8 @@ vm_bootstrap(void)
   spinlock_acquire(&freemem_lock);
   allocTableActive = 1;
   spinlock_release(&freemem_lock);
+  /* Init swapfile */
+  swapfile_init();
 }
 
 static paddr_t 
