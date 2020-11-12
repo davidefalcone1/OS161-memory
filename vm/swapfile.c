@@ -28,6 +28,17 @@ static struct vnode *SWAP_FILE;
 char swapfile_name[] = "emu0:SWAPFILE"; 
 static int swap_pages = SWAPFILE_SIZE / PAGE_SIZE;
 
+void swap_free(struct addrspace *as){
+    int i;
+    for(i = 0; i < swap_pages; i++){
+        if(swap_table[i].as == as){
+            swap_table[i].free = 1;
+            swap_table[i].as = NULL;
+            swap_table[i].vaddr = 0;
+        }
+    }
+}
+
 void swapfile_init(void){
     int result, i;
     result = vfs_open(swapfile_name, O_RDWR|O_CREAT, 0, &SWAP_FILE);
@@ -54,12 +65,12 @@ int swap_read(vaddr_t vaddr, int index){
     uio_init(&iov, &u, (void *)vaddr, PAGE_SIZE, PAGE_SIZE * index, 
                 UIO_READ, 0);
     result = VOP_READ(SWAP_FILE, &u);
-    /* Clean swap page entry in swap map */
+    if(result)
+        return result;
+    /* Clean swap page entry in swap map*/
     swap_table[index].free = 1;
     swap_table[index].as = NULL;
     swap_table[index].vaddr = 0;
-    if(result)
-        return result;
     return 0;
 }
 

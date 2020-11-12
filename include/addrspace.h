@@ -50,7 +50,7 @@ struct vnode;
  * You write this.
  */
 
-#define N_FRAME 5
+#define N_FRAME 100
 
 struct addrspace {
 #if OPT_PAGING

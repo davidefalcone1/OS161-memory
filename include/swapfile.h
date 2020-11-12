@@ -7,5 +7,6 @@ int swapfile_resident(vaddr_t);
 void swapfile_init(void);
 int swap_read(vaddr_t, int);
 void swap_write(vaddr_t);
+void swap_free(struct addrspace *);
 
 #endif

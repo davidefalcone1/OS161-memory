@@ -117,7 +117,7 @@ getppages(unsigned long npages) //high level function that calls getfreeppages
   return addr;
 }
 
-static int 
+int 
 freeppages(paddr_t addr, unsigned long npages){
   long i, first, np=(long)npages;	
 

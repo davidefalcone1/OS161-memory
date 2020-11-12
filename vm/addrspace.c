@@ -38,6 +38,9 @@
 #include <mips/tlb.h>
 #include <addrspace.h>
 #include <vm.h>
+#include "coremap.h"
+#include "swapfile.h"
+#include "vfs.h"
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -49,6 +52,7 @@ struct addrspace *
 as_create(void)
 {
 	struct addrspace *as;
+	int i;
 
 	as = kmalloc(sizeof(struct addrspace));
 	if (as == NULL) {
@@ -61,6 +65,9 @@ as_create(void)
 	as->as_npages2 = 0;
 	as->offset_data_elf = -1;
 	as->offset_text_elf = -1;
+
+	for(i = 0; i < N_FRAME; i++)
+		as->page_table[i].resident = 0;
 
 	return as;
 }
@@ -88,10 +95,22 @@ as_copy(struct addrspace *old, struct addrspace **ret)
 void
 as_destroy(struct addrspace *as)
 {
-	/*
-	 * Clean up as needed.
-	 */
-
+	int i;
+	struct proc *p = curproc;
+	(void)p;
+	struct pt_entry *page_table = as->page_table;
+	for(i = 0; i < N_FRAME; i++){
+		freeppages(page_table[i].paddr, 1);
+	}
+	/* Free process pages stored in swap file */
+	swap_free(as);
+	/* Close ELF file */
+	vfs_close(as->v);
+	int spl = splhigh();
+	for (i=0; i<NUM_TLB; i++) {
+		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
+	}
+	splx(spl);
 	kfree(as);
 }
 
