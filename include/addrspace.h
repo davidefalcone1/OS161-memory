@@ -63,6 +63,7 @@ struct addrspace {
         off_t offset_data_elf;
         struct pt_entry page_table[N_FRAME];
         struct vnode *v; /* vnode of elf file */
+        
 #else
         vaddr_t as_vbase1;
         paddr_t as_pbase1;

@@ -12,6 +12,7 @@
 #include "segments.h"
 #include "swapfile.h"
 #include "vm_tlb.h"
+#include "file_syscalls.h"
 
 #define STACKPAGES    18
 
@@ -43,7 +44,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 {
 	vaddr_t vbase1, vtop1, vbase2, vtop2, stackbase, stacktop;
 	paddr_t paddr;
-	int i, need_load, spl, result, inserted = 0, swap_index;
+	int i, need_load, spl, result, inserted = 0, swap_index, tlb_index;
 	uint32_t ehi, elo;
 	struct addrspace *as;
 	seg_type segment;
@@ -52,16 +53,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 
 	DEBUG(DB_VM, "vm: fault: 0x%x\n", faultaddress);
 
-	switch (faulttype) {
-	    case VM_FAULT_READONLY:
-		/* We always create pages read-write, so we can't get this */
-		panic("dumbvm: got VM_FAULT_READONLY\n");
-	    case VM_FAULT_READ:
-	    case VM_FAULT_WRITE:
-		break;
-	    default:
-		return EINVAL;
-	}
 
 	if (curproc == NULL) {
 		/*
@@ -79,6 +70,18 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 		 * kernel fault early in boot.
 		 */
 		return EFAULT;
+	}
+
+	switch (faulttype) {
+	    case VM_FAULT_READONLY:
+			sys_exit(EPERM);
+		/* We always create pages read-write, so we can't get this */
+		//panic("dumbvm: got VM_FAULT_READONLY\n");
+	    case VM_FAULT_READ:
+	    case VM_FAULT_WRITE:
+		break;
+	    default:
+		return EINVAL;
 	}
 
 	/* Assert that the address space has been set up properly. */
@@ -147,11 +150,18 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
     if(need_load){
         /* Page fault */
 		// First, clear frame
-		bzero((void *)faultaddress, PAGE_SIZE);
+		// bzero((void *)faultaddress, PAGE_SIZE);
 		switch (segment)
 		{
 		case CODE:
 			result = load_page_from_elf(faultaddress, 1);
+			//Set code page read only after loading it from the ELF
+			spl = splhigh();
+			tlb_index = tlb_resident(faultaddress);
+			ehi = faultaddress;
+			elo = paddr | TLBLO_VALID;
+			tlb_write(ehi, elo, tlb_index);
+			splx(spl);
 			if(result)
 				return result;
 			break;

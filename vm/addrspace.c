@@ -65,6 +65,7 @@ as_create(void)
 	as->as_npages2 = 0;
 	as->offset_data_elf = -1;
 	as->offset_text_elf = -1;
+	
 
 	for(i = 0; i < N_FRAME; i++)
 		as->page_table[i].resident = 0;
