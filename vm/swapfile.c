@@ -14,6 +14,7 @@
 #include <vnode.h>
 #include <kern/fcntl.h>
 #include "swapfile.h"
+#include "vmstats.h"
 
 struct swap_table_entry{
     struct addrspace *as;
@@ -71,6 +72,7 @@ int swap_read(vaddr_t vaddr, int index){
     swap_table[index].free = 1;
     swap_table[index].as = NULL;
     swap_table[index].vaddr = 0;
+    inc_PF_swap();
     return 0;
 }
 
@@ -90,6 +92,7 @@ void swap_write(vaddr_t vaddr){
             swap_table[i].as = as;
             swap_table[i].vaddr = vaddr;
             swap_table[i].free = 0;
+            inc_SWAP_writes();
             return;
         }
     }

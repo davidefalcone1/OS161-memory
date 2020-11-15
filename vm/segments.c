@@ -12,6 +12,7 @@
 #include "segments.h"
 #include <uio.h>
 #include <vnode.h>
+#include "vmstats.h"
 
 int load_page_from_elf(vaddr_t vaddr, int is_code){
     struct iovec iov;
@@ -26,5 +27,6 @@ int load_page_from_elf(vaddr_t vaddr, int is_code){
     result = VOP_READ(v, &u);
     if(result)
         return result;
+    inc_PF_elf();
     return 0;
 }

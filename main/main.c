@@ -50,6 +50,7 @@
 #include <test.h>
 #include <version.h>
 #include "autoconf.h"  // for pseudoconfig
+#include "vmstats.h"
 
 
 /*
@@ -147,7 +148,9 @@ static
 void
 shutdown(void)
 {
-
+#if OPT_PAGING
+	print_stats();
+#endif
 	kprintf("Shutting down.\n");
 
 	vfs_clearbootfs();

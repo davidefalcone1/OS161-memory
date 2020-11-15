@@ -41,6 +41,7 @@
 #include "coremap.h"
 #include "swapfile.h"
 #include "vfs.h"
+#include "vmstats.h"
 
 /*
  * Note! If OPT_DUMBVM is set, as is the case until you start the VM
@@ -136,6 +137,7 @@ as_activate(void)
 		}
 
 		splx(spl);
+		inc_TLB_invalid();
 	}
 
 	prev_as = as;

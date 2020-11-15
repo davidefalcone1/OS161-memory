@@ -13,6 +13,7 @@
 #include "swapfile.h"
 #include "vm_tlb.h"
 #include "file_syscalls.h"
+#include "vmstats.h"
 
 #define STACKPAGES    18
 
@@ -53,6 +54,19 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 
 	DEBUG(DB_VM, "vm: fault: 0x%x\n", faultaddress);
 
+	switch (faulttype) {
+	    case VM_FAULT_READONLY:
+			sys_exit(EPERM);
+		/* We always create pages read-write, so we can't get this */
+		//panic("dumbvm: got VM_FAULT_READONLY\n");
+	    case VM_FAULT_READ:
+	    case VM_FAULT_WRITE:
+		break;
+	    default:
+		return EINVAL;
+	}
+
+	inc_TLB_faults();
 
 	if (curproc == NULL) {
 		/*
@@ -70,18 +84,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 		 * kernel fault early in boot.
 		 */
 		return EFAULT;
-	}
-
-	switch (faulttype) {
-	    case VM_FAULT_READONLY:
-			sys_exit(EPERM);
-		/* We always create pages read-write, so we can't get this */
-		//panic("dumbvm: got VM_FAULT_READONLY\n");
-	    case VM_FAULT_READ:
-	    case VM_FAULT_WRITE:
-		break;
-	    default:
-		return EINVAL;
 	}
 
 	/* Assert that the address space has been set up properly. */
@@ -113,12 +115,14 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 	}
 
 	paddr = page_is_resident(faultaddress);
-	if(!paddr){
+	if(!paddr) {
 		paddr = get_proc_frame(faultaddress);
 		need_load = 1;
 	}
-	else 
+	else {
 		need_load = 0;
+		inc_TLB_reload();
+	}
     
 	/* make sure it's page-aligned */
 	KASSERT((paddr & PAGE_FRAME) == paddr);
@@ -136,21 +140,21 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 		tlb_write(ehi, elo, i);
 		splx(spl);
 		inserted = 1;
+		inc_TLB_faults_free();
 		break;
 	}
 
-	if(!inserted){
+	if(!inserted) {
 		/* TLB replacement */
 		ehi = faultaddress;
 		elo = paddr | TLBLO_DIRTY | TLBLO_VALID;
 		tlb_write(ehi, elo, tlb_get_rr_victim());
 		splx(spl);
+		inc_TLB_faults_replace();
 	}
 
-    if(need_load){
+    if(need_load) {
         /* Page fault */
-		// First, clear frame
-		// bzero((void *)faultaddress, PAGE_SIZE);
 		switch (segment)
 		{
 		case CODE:
@@ -164,6 +168,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 			splx(spl);
 			if(result)
 				return result;
+			inc_PF_disk();
 			break;
 		case DATA:
 			// Check wheter page is in swap file 
@@ -180,6 +185,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 				if(result)
 					return result;
 			}
+			inc_PF_disk();
 			break;
 		case STACK:
 			// Check wheter page is in swap file
@@ -189,8 +195,13 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 				result = swap_read(faultaddress, swap_index);
 				if(result)
 					return result;
+				inc_PF_disk();
 			}
-			// If not, do nothing (frame already prepared) 
+			else {
+				// Clear the frame
+				bzero((void *)faultaddress, PAGE_SIZE); 
+				inc_PF_zeroed();
+			}
 			break;
 		default:
 			return EFAULT;
