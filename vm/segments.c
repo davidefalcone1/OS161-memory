@@ -22,6 +22,7 @@ int load_page_from_elf(vaddr_t vaddr, int is_code){
     int result;
     off_t base = is_code ? as->offset_text_elf : as->offset_data_elf;
     off_t offset = is_code ? (vaddr - as->as_vbase1) : (vaddr - as->as_vbase2);
+    base &= PAGE_FRAME;
 
     uio_init(&iov, &u, (void *)vaddr, PAGE_SIZE, base + offset, UIO_READ, is_code);
     result = VOP_READ(v, &u);

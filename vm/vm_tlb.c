@@ -155,6 +155,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 
     if(need_load) {
         /* Page fault */
+		// Clear the frame
+		bzero((void *)faultaddress, PAGE_SIZE); 
 		switch (segment)
 		{
 		case CODE:
@@ -171,7 +173,7 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 			inc_PF_disk();
 			break;
 		case DATA:
-			// Check wheter page is in swap file 
+			// Check whether page is in swap file 
 			swap_index = swapfile_resident(faultaddress);
 			if(swap_index >= 0){
 				// If so, load from swap file
@@ -180,7 +182,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 					return result;
 			}
 			else{
-				// If not, load from elf
 				result = load_page_from_elf(faultaddress, 0);
 				if(result)
 					return result;
@@ -197,11 +198,8 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 					return result;
 				inc_PF_disk();
 			}
-			else {
-				// Clear the frame
-				bzero((void *)faultaddress, PAGE_SIZE); 
+			else
 				inc_PF_zeroed();
-			}
 			break;
 		default:
 			return EFAULT;

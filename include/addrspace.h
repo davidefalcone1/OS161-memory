@@ -60,7 +60,7 @@ struct addrspace {
         vaddr_t as_vbase2;
         size_t as_npages2;
         off_t offset_text_elf;
-        off_t offset_data_elf;
+        off_t offset_data_elf;       
         struct pt_entry page_table[N_FRAME];
         struct vnode *v; /* vnode of elf file */
         
