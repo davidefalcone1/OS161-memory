@@ -35,7 +35,9 @@ int load_page_from_elf(vaddr_t vaddr, int is_code){
 
     size = temp-elf_offset;
 
-    uio_init(&iov, &u, (void *)vaddr, size, elf_offset, UIO_READ, is_code);
+    off_t page_off = elf_offset - (elf_offset&PAGE_FRAME);
+
+    uio_init(&iov, &u, (void *)vaddr+page_off, size, elf_offset, UIO_READ, is_code);
     // uio_init(&iov, &u, (void *)vaddr, PAGE_SIZE, elf_offset, UIO_READ, is_code);
 
     result = VOP_READ(v, &u);
