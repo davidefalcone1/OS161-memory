@@ -49,7 +49,6 @@ int vm_fault(int faulttype, vaddr_t faultaddress)
 	uint32_t ehi, elo;
 	struct addrspace *as;
 	seg_type segment;
-
 	faultaddress &= PAGE_FRAME;
 
 	DEBUG(DB_VM, "vm: fault: 0x%x\n", faultaddress);

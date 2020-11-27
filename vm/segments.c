@@ -29,7 +29,7 @@ int load_page_from_elf(vaddr_t vaddr, int is_code){
     temp = elf_offset+PAGE_SIZE;
 
     if(is_code && (temp>=as->offset_data_elf)) 
-        temp = as->offset_data_elf-1;    
+        temp = as->offset_data_elf;    
     if(!is_code && (elf_offset<as->offset_data_elf))
         elf_offset = as->offset_data_elf;
 

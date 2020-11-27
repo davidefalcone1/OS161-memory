@@ -119,15 +119,15 @@ void
 as_activate(void)
 {
 	int i, spl;
-	struct addrspace *as;
-	static struct addrspace *prev_as = NULL;
+	struct proc *proc = curproc;
+	static struct proc *prevproc = NULL;
 
-	as = proc_getas();
-	if (as == NULL) {
+	if(proc->pid == 1){ //Am I the kernel??
+		prevproc = curproc;
 		return;
 	}
 
-	if(prev_as != as){
+	if(strcmp(proc->p_name, prevproc->p_name)){
 		/* Disable interrupts on this CPU while frobbing the TLB. */
 		spl = splhigh();
 
@@ -139,7 +139,7 @@ as_activate(void)
 		inc_TLB_invalid();
 	}
 
-	prev_as = as;
+	prevproc = curproc;
 }
 
 void
