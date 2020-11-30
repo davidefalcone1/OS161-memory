@@ -107,11 +107,6 @@ as_destroy(struct addrspace *as)
 	swap_free(as);
 	/* Close ELF file */
 	vfs_close(as->v);
-	int spl = splhigh();
-	for (i=0; i<NUM_TLB; i++) {
-		tlb_write(TLBHI_INVALID(i), TLBLO_INVALID(), i);
-	}
-	splx(spl);
 	kfree(as);
 }
 
