@@ -1,4 +1,4 @@
-# Paging
+# OS161-memory management system
 This is an on-demand paging memory management system for the teaching operating system OS161.\
 On-demand paging has been implemented via a local fixed-allocation policy, this means that a set of physical frames is allocated for each process and victim pages are chosen among those of the faulting process.
 ## TLB Management
