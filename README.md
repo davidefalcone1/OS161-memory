@@ -1,5 +1,6 @@
 # OS161 memory management system
-This is an on-demand paging memory management system for the teaching operating system OS161.\
+This work is the result of System and Device Programming course project, at Polytechnic University of Turin. It has been developed by Mattia Bencivenga, Aurelio Cirella and Davide Falcone using pair programming approach. 
+This is an on-demand paging memory management system for the teaching operating system OS161. \
 On-demand paging has been implemented via a local fixed-allocation policy, this means that a set of physical frames is allocated for each process and victim pages are chosen among those of the faulting process.
 ## TLB Management
 TLB is managed entirely by means of functions defined in vm_tlb.c. Here, the system handles the cases in which the process references pages that are not present in TLB (“TLB miss”). 
