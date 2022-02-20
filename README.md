@@ -29,8 +29,8 @@ Regarding point 5 of TLB management, if the page was not in memory (page fault),
 Page replacement comes in place in get_proc_frame, in particular when no free frames are available. After a victim is found, the kernel writes the frame in the swapfile (swap_write) if it does not belong to the code area. Then, checks if that page is present in TLB using tlb_resident and if so, it removes that entry using tlb_remove.
 Logically, the swapfile is divided in pages, identified by an index. A swap table is used to keep track of used pages and to facilitate read and write operations.
 For the swapfile management, the system uses the following functions: 
-- swapfile_init is used to create the swapfile file 
+- swapfile_init is used to create the swapfile file. 
 - swap_free is used to mark as free all the pages belonging to a given addrspace when terminating a process. 
-- swapfile_resident is used to retrieve the index of a page of the swapfile starting from a virtual address
-- swap_read is used to read a page from the swapfile
+- swapfile_resident is used to retrieve the index of a page of the swapfile starting from a virtual address.
+- swap_read is used to read a page from the swapfile.
 - swap_write is used to write a page in the swapfile.
